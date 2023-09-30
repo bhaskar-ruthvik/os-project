@@ -25,14 +25,14 @@ int main(int argc,char* argv[]){
         exit(1);
     }
     if((msgid= msgget(key,PERMS | IPC_CREAT))==-1){
-        perror("msgget");
+        perror("Could not create message queue.");
         exit(1);
     }
     printf("Ready to receive messages\n");
     while(1){
+    
         if(msgrcv(msgid,&buf,sizeof(buf.mesg_text),0,0)==-1){
-            printf("%s", buf.mesg_text);
-            perror("msgrcv");
+            printf("There was an error receiving message from the client. Server Terminating\n.");
             exit(1);
         }
         switch(buf.mesg_type){
@@ -54,7 +54,7 @@ int main(int argc,char* argv[]){
             }
             break;
         case 2:
-            //printf("inside 2");
+
             pid_t pid2 = fork();
             if(pid2 == -1){
                 perror("fork");
@@ -63,7 +63,7 @@ int main(int argc,char* argv[]){
             if(pid2 == 0){
                 int fd1[2];
                 if(pipe(fd1)==-1){
-                    perror("pipe");
+                    perror("Error in creating pipe");
                     exit(1);
                 }
                 struct mesg_buffer buf3;
@@ -110,7 +110,7 @@ int main(int argc,char* argv[]){
                     }
                     buf3.mesg_type = 2;
                     if(msgsnd(msgid,&buf3,strlen(buf3.mesg_text)+1,0)==-1){
-                        perror("msgsnd");
+                        perror("Error in sending message to the client.");
                         exit(1);
                     }
                     exit(0);
@@ -126,7 +126,7 @@ int main(int argc,char* argv[]){
             if(pid3 == 0){
                 int fd[2];
                 if(pipe(fd)==-1){
-                    perror("pipe");
+                    perror("Error in creating pipe.");
                     exit(1);
                 }
                 struct mesg_buffer buf4;
@@ -168,11 +168,13 @@ int main(int argc,char* argv[]){
         case 4:
             while(wait(NULL) > 0){};
             if(msgctl(msgid, IPC_RMID, NULL) == -1){
-                perror("msgctl");
+                perror("Could not close message queue");
                 exit(1);
             }
             printf("Main server terminated\n");
             exit(0);
+            break;
+        }
         } 
     }
-}
+

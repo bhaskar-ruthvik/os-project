@@ -24,7 +24,7 @@ int main(int argc,char* argv[]){
         exit(1);
     }
     if((msgid= msgget(key,PERMS))==-1){
-        perror("msgget failed");
+        printf("Server not running\n");
         exit(1);
     }
     char greeting[] = "1. Enter 1 to contact the Ping Server\n2. Enter 2 to contact the File Search Server\n3. Enter 3 to contact the File Word Count Server\n4. Enter 4 if this Client wishes to exit\n\n";
@@ -34,25 +34,28 @@ int main(int argc,char* argv[]){
         exit(EXIT_FAILURE);
     }   
     if(pid == 0){        
-        int clientID;  
+        uid_t clientID;  
         printf("Enter Client-ID: ");
-        scanf("%d",&clientID);   
+        scanf("%d",&clientID); 
+        //Requires to be run with specific permissions to work
+        setuid(clientID);
         while(i!=4){
             struct mesg_buffer buf;
             struct mesg_buffer buf2;
             printf("%s",greeting);
             scanf("%d",&i);
             getchar();
+        
             switch(i){
                 case 1:
                     buf.mesg_type = 1;
                     strcpy(buf.mesg_text,"Hi\0");
                     if(msgsnd(msgid,&buf,strlen(buf.mesg_text)+1,0)==-1){
-                        perror("msgsnd");
+                        printf("Server terminated. Could not ping server... Client Exiting.\n");
                         exit(1);
                     }
                     if(msgrcv(msgid,&buf2,sizeof(buf2.mesg_text),0,0)==-1){
-                        perror("msgrcv");
+                        printf("There was an error in receiving message from server\n");
                         exit(1);
                     }
                     printf("%s\n\n",buf2.mesg_text);
@@ -62,11 +65,11 @@ int main(int argc,char* argv[]){
                     printf("Enter the name of the file you are searching for: ");
                     scanf("%[^\n]s",buf.mesg_text);
                     if(msgsnd(msgid,&buf,strlen(buf.mesg_text)+1,0)==-1){
-                        perror("msgsnd");
+                        printf("Server terminated. Could not send file search request. Client Exiting...\n");
                         exit(1);
                     }
                     if(msgrcv(msgid,&buf2,sizeof(buf2.mesg_text),0,0)==-1){
-                        perror("msgrcv");
+                        printf("There was an error in finding the file\n");
                         exit(1);
                     }
                     printf("%s\n\n",buf2.mesg_text);
@@ -76,11 +79,11 @@ int main(int argc,char* argv[]){
                     printf("Enter the name of the file whose word count you want: ");
                     scanf("%[^\n]s",buf.mesg_text);
                     if(msgsnd(msgid,&buf,strlen(buf.mesg_text)+1,0)==-1){
-                        perror("msgsnd");
+                        printf("Server terminated. Could not send file word count request. Client Exiting.\n");
                         exit(1);
                     }
                     if(msgrcv(msgid,&buf2,sizeof(buf2.mesg_text),0,0)==-1){
-                        perror("msgrcv");
+                        printf("There was an error in getting the word count of the file\n");
                         exit(1);
                     }
                     printf("The word count of the file is: %s\n\n",buf2.mesg_text);
